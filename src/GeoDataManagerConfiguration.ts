@@ -12,7 +12,9 @@
  * express or implied. See the License for the specific language governing
  * permissions and limitations under the License.
  */
-import { DynamoDB } from "aws-sdk";
+
+
+import { DynamoDB } from "@aws-sdk/client-dynamodb";
 import { S2RegionCoverer } from "nodes2ts";
 
 export class GeoDataManagerConfiguration {

@@ -13,7 +13,8 @@
  * permissions and limitations under the License.
  */
 
-import { AWSError, DynamoDB, Request } from "aws-sdk";
+import { AWSError, Request } from "aws-sdk";
+import { AttributeValue, QueryCommandOutput } from "@aws-sdk/client-dynamodb";
 import { DynamoDBManager } from "./dynamodb/DynamoDBManager";
 import { GeoDataManagerConfiguration } from "./GeoDataManagerConfiguration";
 import {
@@ -203,7 +204,7 @@ export class GeoDataManager {
    */
   public async queryRectangle(
     queryRectangleInput: QueryRectangleInput
-  ): Promise<DynamoDB.ItemList> {
+  ): Promise<Array<Record<string, AttributeValue>>> {
     const latLngRect: S2LatLngRect =
       S2Util.latLngRectFromQueryRectangleInput(queryRectangleInput);
 
@@ -239,7 +240,7 @@ export class GeoDataManager {
    * */
   public async queryRadius(
     queryRadiusInput: QueryRadiusInput
-  ): Promise<DynamoDB.ItemList> {
+  ): Promise<Array<Record<string, AttributeValue>>> {
     const latLngRect: S2LatLngRect =
       S2Util.getBoundingLatLngRectFromQueryRadiusInput(queryRadiusInput);
 
@@ -328,7 +329,7 @@ export class GeoDataManager {
     covering: Covering,
     geoQueryInput: GeoQueryInput
   ) {
-    const promises: Promise<DynamoDB.QueryOutput[]>[] = covering
+    const promises: Promise<QueryCommandOutput[]>[] = covering
       .getGeoHashRanges(this.config.hashKeyLength)
       .map((range) => {
         const hashKey = S2Manager.generateHashKey(
@@ -342,7 +343,7 @@ export class GeoDataManager {
         );
       });
 
-    const results: DynamoDB.QueryOutput[][] = await Promise.all(promises);
+    const results: QueryCommandOutput[][] = await Promise.all(promises);
     const mergedResults = [];
     results.forEach((queryOutputs) =>
       queryOutputs.forEach((queryOutput) =>
@@ -360,9 +361,9 @@ export class GeoDataManager {
    * @returns DynamoDB.ItemList
    */
   private filterByRadius(
-    list: DynamoDB.ItemList,
+    list: Array<Record<string, AttributeValue>>,
     geoQueryInput: QueryRadiusInput
-  ): DynamoDB.ItemList {
+  ): Array<Record<string, AttributeValue>> {
     let centerLatLng: S2LatLng = null;
     let radiusInMeter = 0;
 
@@ -396,9 +397,9 @@ export class GeoDataManager {
    * @returns DynamoDB.ItemList
    */
   private filterByRectangle(
-    list: DynamoDB.ItemList,
+    list: Array<Record<string, AttributeValue>>,
     geoQueryInput: QueryRectangleInput
-  ): DynamoDB.ItemList {
+  ): Array<Record<string, AttributeValue>> {
     const latLngRect: S2LatLngRect =
       S2Util.latLngRectFromQueryRectangleInput(geoQueryInput);
 

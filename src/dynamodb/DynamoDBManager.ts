@@ -14,7 +14,16 @@
  */
 
 import { GeoDataManagerConfiguration } from "../GeoDataManagerConfiguration";
-import { AWSError, DynamoDB, Request } from "aws-sdk";
+import { AWSError, Request } from "aws-sdk";
+import {
+  AttributeValue,
+  Condition,
+  PutItemCommandInput,
+  PutRequest,
+  QueryCommandInput,
+  QueryCommandOutput,
+  WriteRequest,
+} from "@aws-sdk/client-dynamodb";
 import {
   BatchWritePointOutput,
   DeletePointInput,
@@ -29,7 +38,6 @@ import {
 import { S2Manager } from "../s2/S2Manager";
 import { GeohashRange } from "../model/GeohashRange";
 import Long from "long";
-import { PutItemInput, PutRequest } from "aws-sdk/clients/dynamodb";
 
 export class DynamoDBManager {
   private config: GeoDataManagerConfiguration;
@@ -51,24 +59,26 @@ export class DynamoDBManager {
    * @return The query result.
    */
   public async queryGeohash(
-    queryInput: DynamoDB.QueryInput | undefined,
+    queryInput: QueryCommandInput | undefined,
     hashKey: Long,
     range: GeohashRange
-  ): Promise<DynamoDB.QueryOutput[]> {
-    const queryOutputs: DynamoDB.QueryOutput[] = [];
+  ): Promise<QueryCommandOutput[]> {
+    const queryOutputs: QueryCommandOutput[] = [];
 
-    const nextQuery = async (lastEvaluatedKey: DynamoDB.Key = null) => {
-      const keyConditions: { [key: string]: DynamoDB.Condition } = {};
+    const nextQuery = async (
+      lastEvaluatedKey: Record<string, AttributeValue> = null
+    ) => {
+      const keyConditions: { [key: string]: Condition } = {};
 
       keyConditions[this.config.hashKeyAttributeName] = {
         ComparisonOperator: "EQ",
         AttributeValueList: [{ N: hashKey.toString(10) }],
       };
 
-      const minRange: DynamoDB.AttributeValue = {
+      const minRange: AttributeValue = {
         N: range.rangeMin.toString(10),
       };
-      const maxRange: DynamoDB.AttributeValue = {
+      const maxRange: AttributeValue = {
         N: range.rangeMax.toString(10),
       };
 
@@ -127,7 +137,7 @@ export class DynamoDBManager {
       geohash,
       this.config.hashKeyLength
     );
-    const putItemInput: PutItemInput = {
+    const putItemInput: PutItemCommandInput = {
       ...putPointInput.PutItemInput,
       TableName: this.config.tableName,
       Item: putPointInput.PutItemInput.Item || {},
@@ -156,7 +166,7 @@ export class DynamoDBManager {
   public batchWritePoints(
     putPointInputs: PutPointInput[]
   ): Request<BatchWritePointOutput, AWSError> {
-    const writeInputs: DynamoDB.WriteRequest[] = [];
+    const writeInputs: WriteRequest[] = [];
     putPointInputs.forEach((putPointInput) => {
       const geohash = S2Manager.generateGeohash(putPointInput.GeoPoint);
       const hashKey = S2Manager.generateHashKey(

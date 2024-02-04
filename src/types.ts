@@ -1,12 +1,19 @@
-import { DynamoDB } from "aws-sdk";
+import {
+  AttributeValue,
+  DeleteItemCommandInput,
+  GetItemCommandInput,
+  PutRequest,
+  QueryCommandInput,
+  UpdateItemCommandInput,
+} from "@aws-sdk/client-dynamodb";
 
 export interface BatchWritePointOutput extends DynamoDB.BatchWriteItemOutput {
 }
 
 export interface DeletePointInput {
-  RangeKeyValue: DynamoDB.AttributeValue;
+  RangeKeyValue: AttributeValue;
   GeoPoint: GeoPoint;
-  DeleteItemInput?: DynamoDB.DeleteItemInput
+  DeleteItemInput?: DeleteItemCommandInput
 }
 export interface DeletePointOutput extends DynamoDB.DeleteItemOutput {
 }
@@ -16,21 +23,21 @@ export interface GeoPoint {
   longitude: number;
 }
 export interface GeoQueryInput {
-  QueryInput?: DynamoDB.QueryInput;
+  QueryInput?: QueryCommandInput;
 }
 export interface GeoQueryOutput extends DynamoDB.QueryOutput {
 }
 export interface GetPointInput {
-  RangeKeyValue: DynamoDB.AttributeValue;
+  RangeKeyValue: AttributeValue;
   GeoPoint: GeoPoint;
-  GetItemInput: DynamoDB.GetItemInput;
+  GetItemInput: GetItemCommandInput;
 }
 export interface GetPointOutput extends DynamoDB.GetItemOutput {
 }
 export interface PutPointInput {
-  RangeKeyValue: DynamoDB.AttributeValue;
+  RangeKeyValue: AttributeValue;
   GeoPoint: GeoPoint;
-  PutItemInput: DynamoDB.PutRequest;
+  PutItemInput: PutRequest;
 }
 export interface PutPointOutput extends DynamoDB.PutItemOutput {
 }
@@ -47,9 +54,9 @@ export interface QueryRectangleInput extends GeoQueryInput {
 export interface QueryRectangleOutput extends GeoQueryOutput {
 }
 export interface UpdatePointInput {
-  RangeKeyValue: DynamoDB.AttributeValue;
+  RangeKeyValue: AttributeValue;
   GeoPoint: GeoPoint;
-  UpdateItemInput: DynamoDB.UpdateItemInput;
+  UpdateItemInput: UpdateItemCommandInput;
 }
 export interface UpdatePointOutput extends DynamoDB.UpdateItemOutput {
 }

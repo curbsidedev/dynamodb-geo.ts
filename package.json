@@ -14,6 +14,7 @@
   "author": "Rob Hogan <github@rhogan.net>",
   "license": "Apache-2.0",
   "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.506.0",
     "long": "^5.2.3",
     "nodes2ts": "^3.0.0"
   },
