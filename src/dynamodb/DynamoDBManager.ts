@@ -14,7 +14,6 @@
  */
 
 import { GeoDataManagerConfiguration } from "../GeoDataManagerConfiguration";
-import { AWSError, Request } from "aws-sdk";
 import {
   AttributeValue,
   Condition,
@@ -23,6 +22,7 @@ import {
   QueryCommandInput,
   QueryCommandOutput,
   WriteRequest,
+  ReturnConsumedCapacity,
 } from "@aws-sdk/client-dynamodb";
 import {
   BatchWritePointOutput,
@@ -37,7 +37,6 @@ import {
 } from "../types";
 import { S2Manager } from "../s2/S2Manager";
 import { GeohashRange } from "../model/GeohashRange";
-import Long from "long";
 
 export class DynamoDBManager {
   private config: GeoDataManagerConfiguration;
@@ -60,7 +59,7 @@ export class DynamoDBManager {
    */
   public async queryGeohash(
     queryInput: QueryCommandInput | undefined,
-    hashKey: Long,
+    hashKey: bigint,
     range: GeohashRange
   ): Promise<QueryCommandOutput[]> {
     const queryOutputs: QueryCommandOutput[] = [];
@@ -92,13 +91,15 @@ export class DynamoDBManager {
         KeyConditions: keyConditions,
         IndexName: this.config.geohashIndexName,
         ConsistentRead: this.config.consistentRead,
-        ReturnConsumedCapacity: "TOTAL",
+        ReturnConsumedCapacity: ReturnConsumedCapacity.TOTAL,
         ExclusiveStartKey: lastEvaluatedKey,
       };
 
-      const queryOutput = await this.config.dynamoDBClient
-        .query({ ...defaults, ...queryInput })
-        .promise();
+      const queryOutput = await this.config.dynamoDBClient.query({
+        ...defaults,
+        ...queryInput,
+      });
+
       queryOutputs.push(queryOutput);
       if (queryOutput.LastEvaluatedKey) {
         return nextQuery(queryOutput.LastEvaluatedKey);
@@ -109,9 +110,7 @@ export class DynamoDBManager {
     return queryOutputs;
   }
 
-  public getPoint(
-    getPointInput: GetPointInput
-  ): Request<GetPointOutput, AWSError> {
+  public getPoint(getPointInput: GetPointInput): GetPointOutput {
     const geohash = S2Manager.generateGeohash(getPointInput.GeoPoint);
     const hashKey = S2Manager.generateHashKey(
       geohash,
@@ -129,9 +128,7 @@ export class DynamoDBManager {
     return this.config.dynamoDBClient.getItem(getItemInput);
   }
 
-  public putPoint(
-    putPointInput: PutPointInput
-  ): Request<PutPointOutput, AWSError> {
+  public putPoint(putPointInput: PutPointInput): PutPointOutput {
     const geohash = S2Manager.generateGeohash(putPointInput.GeoPoint);
     const hashKey = S2Manager.generateHashKey(
       geohash,
@@ -155,8 +152,14 @@ export class DynamoDBManager {
       S: JSON.stringify({
         type: this.config.geoJsonPointType,
         coordinates: this.config.longitudeFirst
-          ? [putPointInput.GeoPoint.longitude, putPointInput.GeoPoint.latitude]
-          : [putPointInput.GeoPoint.latitude, putPointInput.GeoPoint.longitude],
+          ? [
+              putPointInput.GeoPoint.longitude(),
+              putPointInput.GeoPoint.latitude(),
+            ]
+          : [
+              putPointInput.GeoPoint.latitude(),
+              putPointInput.GeoPoint.longitude(),
+            ],
       }),
     };
 
@@ -165,7 +168,7 @@ export class DynamoDBManager {
 
   public batchWritePoints(
     putPointInputs: PutPointInput[]
-  ): Request<BatchWritePointOutput, AWSError> {
+  ): BatchWritePointOutput {
     const writeInputs: WriteRequest[] = [];
     putPointInputs.forEach((putPointInput) => {
       const geohash = S2Manager.generateGeohash(putPointInput.GeoPoint);
@@ -192,12 +195,12 @@ export class DynamoDBManager {
           type: this.config.geoJsonPointType,
           coordinates: this.config.longitudeFirst
             ? [
-                putPointInput.GeoPoint.longitude,
-                putPointInput.GeoPoint.latitude,
+                putPointInput.GeoPoint.longitude(),
+                putPointInput.GeoPoint.latitude(),
               ]
             : [
-                putPointInput.GeoPoint.latitude,
-                putPointInput.GeoPoint.longitude,
+                putPointInput.GeoPoint.latitude(),
+                putPointInput.GeoPoint.longitude(),
               ],
         }),
       };
@@ -212,9 +215,7 @@ export class DynamoDBManager {
     });
   }
 
-  public updatePoint(
-    updatePointInput: UpdatePointInput
-  ): Request<UpdatePointOutput, AWSError> {
+  public updatePoint(updatePointInput: UpdatePointInput): UpdatePointOutput {
     const geohash = S2Manager.generateGeohash(updatePointInput.GeoPoint);
     const hashKey = S2Manager.generateHashKey(
       geohash,
@@ -248,9 +249,7 @@ export class DynamoDBManager {
     );
   }
 
-  public deletePoint(
-    deletePointInput: DeletePointInput
-  ): Request<DeletePointOutput, AWSError> {
+  public deletePoint(deletePointInput: DeletePointInput): DeletePointOutput {
     const geohash = S2Manager.generateGeohash(deletePointInput.GeoPoint);
     const hashKey = S2Manager.generateHashKey(
       geohash,

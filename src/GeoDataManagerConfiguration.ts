@@ -13,12 +13,10 @@
  * permissions and limitations under the License.
  */
 
-
 import { DynamoDB } from "@aws-sdk/client-dynamodb";
-import { S2RegionCoverer } from "nodes2ts";
+import S2 from "@radarlabs/s2";
 
 export class GeoDataManagerConfiguration {
-
   // Public constants
   static MERGE_THRESHOLD = 2;
 
@@ -56,15 +54,15 @@ export class GeoDataManagerConfiguration {
    *
    * @type {string}
    */
-  geoJsonPointType: 'Point' | 'POINT' = 'Point';
+  geoJsonPointType: "Point" | "POINT" = "Point";
 
   dynamoDBClient: DynamoDB;
 
-  S2RegionCoverer: typeof S2RegionCoverer;
+  S2RegionCoverer: typeof S2.RegionCoverer;
 
   constructor(dynamoDBClient, tableName: string) {
     this.dynamoDBClient = dynamoDBClient;
     this.tableName = tableName;
-    this.S2RegionCoverer = S2RegionCoverer;
+    this.S2RegionCoverer = S2.RegionCoverer;
   }
 }

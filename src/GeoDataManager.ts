@@ -13,7 +13,6 @@
  * permissions and limitations under the License.
  */
 
-import { AWSError, Request } from "aws-sdk";
 import { AttributeValue, QueryCommandOutput } from "@aws-sdk/client-dynamodb";
 import { DynamoDBManager } from "./dynamodb/DynamoDBManager";
 import { GeoDataManagerConfiguration } from "./GeoDataManagerConfiguration";
@@ -34,7 +33,7 @@ import {
 } from "./types";
 import { S2Manager } from "./s2/S2Manager";
 import { S2Util } from "./s2/S2Util";
-import { S2LatLng, S2LatLngRect } from "nodes2ts";
+import S2 from "@radarlabs/s2";
 import { Covering } from "./model/Covering";
 
 /**
@@ -113,9 +112,7 @@ export class GeoDataManager {
    *
    * @return Result of put point request.
    */
-  public putPoint(
-    putPointInput: PutPointInput
-  ): Request<PutPointOutput, AWSError> {
+  public putPoint(putPointInput: PutPointInput): PutPointOutput {
     return this.dynamoDBManager.putPoint(putPointInput);
   }
 
@@ -146,7 +143,7 @@ export class GeoDataManager {
    */
   public batchWritePoints(
     putPointInputs: PutPointInput[]
-  ): Request<BatchWritePointOutput, AWSError> {
+  ): BatchWritePointOutput {
     return this.dynamoDBManager.batchWritePoints(putPointInputs);
   }
 
@@ -171,9 +168,7 @@ export class GeoDataManager {
    *
    * @return Result of get point request.
    * */
-  public getPoint(
-    getPointInput: GetPointInput
-  ): Request<GetPointOutput, AWSError> {
+  public getPoint(getPointInput: GetPointInput): GetPointOutput {
     return this.dynamoDBManager.getPoint(getPointInput);
   }
 
@@ -205,11 +200,11 @@ export class GeoDataManager {
   public async queryRectangle(
     queryRectangleInput: QueryRectangleInput
   ): Promise<Array<Record<string, AttributeValue>>> {
-    const latLngRect: S2LatLngRect =
-      S2Util.latLngRectFromQueryRectangleInput(queryRectangleInput);
-
     const covering = new Covering(
-      new this.config.S2RegionCoverer().getCoveringCells(latLngRect)
+      this.config.S2RegionCoverer.getCovering(
+        [queryRectangleInput.MinPoint, queryRectangleInput.MaxPoint],
+        {}
+      ).cellIds()
     );
 
     const results = await this.dispatchQueries(covering, queryRectangleInput);
@@ -241,11 +236,12 @@ export class GeoDataManager {
   public async queryRadius(
     queryRadiusInput: QueryRadiusInput
   ): Promise<Array<Record<string, AttributeValue>>> {
-    const latLngRect: S2LatLngRect =
-      S2Util.getBoundingLatLngRectFromQueryRadiusInput(queryRadiusInput);
-
     const covering = new Covering(
-      new this.config.S2RegionCoverer().getCoveringCells(latLngRect)
+      this.config.S2RegionCoverer.getRadiusCovering(
+        queryRadiusInput.CenterPoint,
+        queryRadiusInput.RadiusInMeter,
+        {}
+      ).cellIds()
     );
 
     const results = await this.dispatchQueries(covering, queryRadiusInput);
@@ -281,9 +277,7 @@ export class GeoDataManager {
    *
    * @return Result of update point request.
    */
-  public updatePoint(
-    updatePointInput: UpdatePointInput
-  ): Request<UpdatePointOutput, AWSError> {
+  public updatePoint(updatePointInput: UpdatePointInput): UpdatePointOutput {
     return this.dynamoDBManager.updatePoint(updatePointInput);
   }
 
@@ -308,9 +302,7 @@ export class GeoDataManager {
    *
    * @return Result of delete point request.
    */
-  public deletePoint(
-    deletePointInput: DeletePointInput
-  ): Request<DeletePointOutput, AWSError> {
+  public deletePoint(deletePointInput: DeletePointInput): DeletePointOutput {
     return this.dynamoDBManager.deletePoint(deletePointInput);
   }
 
@@ -364,28 +356,20 @@ export class GeoDataManager {
     list: Array<Record<string, AttributeValue>>,
     geoQueryInput: QueryRadiusInput
   ): Array<Record<string, AttributeValue>> {
-    let centerLatLng: S2LatLng = null;
-    let radiusInMeter = 0;
-
-    const centerPoint: GeoPoint = (geoQueryInput as QueryRadiusInput)
+    let centerLatLng: S2.LatLng = (geoQueryInput as QueryRadiusInput)
       .CenterPoint;
-    centerLatLng = S2LatLng.fromDegrees(
-      centerPoint.latitude,
-      centerPoint.longitude
-    );
-    radiusInMeter = (geoQueryInput as QueryRadiusInput).RadiusInMeter;
+    let radiusInMeter = (geoQueryInput as QueryRadiusInput).RadiusInMeter ?? 0;
 
     return list.filter((item) => {
       const geoJson: string = item[this.config.geoJsonAttributeName].S;
       const coordinates = JSON.parse(geoJson).coordinates;
       const longitude = coordinates[this.config.longitudeFirst ? 0 : 1];
       const latitude = coordinates[this.config.longitudeFirst ? 1 : 0];
+      console.log("gmr", item, geoJson, coordinates, longitude, latitude);
 
-      const latLng: S2LatLng = S2LatLng.fromDegrees(latitude, longitude);
-      return (
-        (centerLatLng.getEarthDistance(latLng) as any).toNumber() <=
-        radiusInMeter
-      );
+      const latLng: S2.LatLng = new S2.LatLng(latitude, longitude);
+
+      return S2.Earth.getDistanceMeters(latLng, centerLatLng) <= radiusInMeter;
     });
   }
 
@@ -400,7 +384,7 @@ export class GeoDataManager {
     list: Array<Record<string, AttributeValue>>,
     geoQueryInput: QueryRectangleInput
   ): Array<Record<string, AttributeValue>> {
-    const latLngRect: S2LatLngRect =
+    const latLngRect: S2.Polyline =
       S2Util.latLngRectFromQueryRectangleInput(geoQueryInput);
 
     return list.filter((item) => {
@@ -409,8 +393,10 @@ export class GeoDataManager {
       const longitude = coordinates[this.config.longitudeFirst ? 0 : 1];
       const latitude = coordinates[this.config.longitudeFirst ? 1 : 0];
 
-      const latLng: S2LatLng = S2LatLng.fromDegrees(latitude, longitude);
-      return latLngRect.containsLL(latLng);
+      const latLng: S2.LatLng = new S2.LatLng(latitude, longitude);
+      const cellId = new S2.CellId(latLng);
+      const cell = new S2.Cell(cellId);
+      return latLngRect.contains(cell);
     });
   }
 }
