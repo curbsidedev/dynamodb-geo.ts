@@ -14,12 +14,12 @@
  */
 
 import { GeoPoint } from "../types";
-import { CellId } from "@radarlabs/s2";
+import S2 from "@radarlabs/s2";
 
 export class S2Manager {
   static generateGeohash(geoPoint: GeoPoint) {
-    const s2LatLong = geoPoint;
-    const cell = new CellId(s2LatLong);
+    const s2LatLong = new S2.LatLng(geoPoint.latitude, geoPoint.longitude);
+    const cell = new S2.CellId(s2LatLong);
     return cell.id();
   }
 

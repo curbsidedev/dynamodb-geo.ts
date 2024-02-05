@@ -202,7 +202,16 @@ export class GeoDataManager {
   ): Promise<Array<Record<string, AttributeValue>>> {
     const covering = new Covering(
       this.config.S2RegionCoverer.getCovering(
-        [queryRectangleInput.MinPoint, queryRectangleInput.MaxPoint],
+        [
+          new S2.LatLng(
+            queryRectangleInput.MinPoint.latitude,
+            queryRectangleInput.MinPoint.longitude
+          ),
+          new S2.LatLng(
+            queryRectangleInput.MaxPoint.latitude,
+            queryRectangleInput.MaxPoint.longitude
+          ),
+        ],
         {}
       ).cellIds()
     );
@@ -238,7 +247,10 @@ export class GeoDataManager {
   ): Promise<Array<Record<string, AttributeValue>>> {
     const covering = new Covering(
       this.config.S2RegionCoverer.getRadiusCovering(
-        queryRadiusInput.CenterPoint,
+        new S2.LatLng(
+          queryRadiusInput.CenterPoint.latitude,
+          queryRadiusInput.CenterPoint.longitude
+        ),
         queryRadiusInput.RadiusInMeter,
         {}
       ).cellIds()
@@ -356,8 +368,10 @@ export class GeoDataManager {
     list: Array<Record<string, AttributeValue>>,
     geoQueryInput: QueryRadiusInput
   ): Array<Record<string, AttributeValue>> {
-    let centerLatLng: S2.LatLng = (geoQueryInput as QueryRadiusInput)
-      .CenterPoint;
+    let centerLatLng: S2.LatLng = new S2.LatLng(
+      geoQueryInput.CenterPoint.latitude,
+      geoQueryInput.CenterPoint.longitude
+    );
     let radiusInMeter = (geoQueryInput as QueryRadiusInput).RadiusInMeter ?? 0;
 
     return list.filter((item) => {

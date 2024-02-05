@@ -152,14 +152,8 @@ export class DynamoDBManager {
       S: JSON.stringify({
         type: this.config.geoJsonPointType,
         coordinates: this.config.longitudeFirst
-          ? [
-              putPointInput.GeoPoint.longitude(),
-              putPointInput.GeoPoint.latitude(),
-            ]
-          : [
-              putPointInput.GeoPoint.latitude(),
-              putPointInput.GeoPoint.longitude(),
-            ],
+          ? [putPointInput.GeoPoint.longitude, putPointInput.GeoPoint.latitude]
+          : [putPointInput.GeoPoint.latitude, putPointInput.GeoPoint.longitude],
       }),
     };
 
@@ -195,12 +189,12 @@ export class DynamoDBManager {
           type: this.config.geoJsonPointType,
           coordinates: this.config.longitudeFirst
             ? [
-                putPointInput.GeoPoint.longitude(),
-                putPointInput.GeoPoint.latitude(),
+                putPointInput.GeoPoint.longitude,
+                putPointInput.GeoPoint.latitude,
               ]
             : [
-                putPointInput.GeoPoint.latitude(),
-                putPointInput.GeoPoint.longitude(),
+                putPointInput.GeoPoint.latitude,
+                putPointInput.GeoPoint.longitude,
               ],
         }),
       };

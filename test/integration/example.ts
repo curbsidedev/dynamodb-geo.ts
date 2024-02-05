@@ -54,7 +54,7 @@ describe("Example", function () {
     const putPointInputs = data.map(function (capital, i) {
       return {
         RangeKeyValue: { S: String(i) }, // Use this to ensure uniqueness of the hash/range pairs.
-        GeoPoint: new S2.LatLng(capital.latitude, capital.longitude),
+        GeoPoint: { latitude: capital.latitude, longitude: capital.longitude },
         PutItemInput: {
           Item: {
             country: { S: capital.country },
@@ -102,7 +102,7 @@ describe("Example", function () {
     // Perform a radius query
     const result = await capitalsManager.queryRadius({
       RadiusInMeter: 100000,
-      CenterPoint: new S2.LatLng(52.22573, 0.149593),
+      CenterPoint: { latitude: 52.22573, longitude: 0.149593 },
     });
 
     expect(result).to.deep.equal([

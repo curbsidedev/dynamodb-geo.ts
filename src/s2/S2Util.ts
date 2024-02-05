@@ -7,8 +7,14 @@ export class S2Util {
   ): S2.Polyline {
     const queryRectangleRequest = geoQueryRequest as QueryRectangleInput;
 
-    const minPoint = queryRectangleRequest.MinPoint;
-    const maxPoint = queryRectangleRequest.MaxPoint;
+    const minPoint = new S2.LatLng(
+      queryRectangleRequest.MinPoint.latitude,
+      queryRectangleRequest.MinPoint.longitude
+    );
+    const maxPoint = new S2.LatLng(
+      queryRectangleRequest.MaxPoint.latitude,
+      queryRectangleRequest.MaxPoint.longitude
+    );
 
     let latLngRect: S2.Polyline = null;
 

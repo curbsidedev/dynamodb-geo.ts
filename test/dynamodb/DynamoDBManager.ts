@@ -26,7 +26,7 @@ describe("DynamoDBManager.deletePoint", () => {
 
     ddb.deletePoint({
       RangeKeyValue: { S: "1234" },
-      GeoPoint: new S2.LatLng(1, 50),
+      GeoPoint: { latitude: 1, longitude: 50 },
     });
 
     expect(called).to.be.true;
@@ -44,7 +44,7 @@ describe("DynamoDBManager.putPoint", () => {
             TableName: "MyTable",
             Item: {
               geoJson: {
-                S: '{"type":"Point","coordinates":[-0.13,51.510000000000005]}',
+                S: '{"type":"Point","coordinates":[-0.13,51.51]}',
               },
               geohash: { N: "5221366118452580119" },
               hashKey: { N: "52" },
@@ -63,11 +63,11 @@ describe("DynamoDBManager.putPoint", () => {
 
     ddb.putPoint({
       RangeKeyValue: { S: "1234" }, // Use this to ensure uniqueness of the hash/range pairs.
-      GeoPoint: new S2.LatLng(
+      GeoPoint: {
         // An object specifying latitutde and longitude as plain numbers. Used to build the geohash, the hashkey and geojson data
-        51.51,
-        -0.13
-      ),
+        latitude: 51.51,
+        longitude: -0.13,
+      },
       PutItemInput: {
         // Passed through to the underlying DynamoDB.putItem request. TableName is filled in for you.
         Item: {
