@@ -14,17 +14,16 @@
   "author": "Rob Hogan <github@rhogan.net>",
   "license": "Apache-2.0",
   "dependencies": {
-    "@aws-sdk/client-dynamodb": "^3.506.0",
+    "@aws-sdk/client-dynamodb": "^3.507.0",
     "@radarlabs/s2": "^0.0.5",
-    "@smithy/node-http-handler": "^2.3.1",
-    "http2": "^3.3.7"
+    "@smithy/node-http-handler": "^2.3.1"
   },
   "devDependencies": {
-    "@types/chai": "^4.0.0",
-    "@types/mocha": "^2.2.41",
-    "@types/node": "^7.10.14",
-    "chai": "^4.0.1",
-    "mocha": "^3.3.0",
+    "@types/chai": "^4.3.11",
+    "@types/mocha": "^10.0.6",
+    "@types/node": "^20.11.16",
+    "chai": "^4.4.1",
+    "mocha": "^10.2.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.3.3"
   }
